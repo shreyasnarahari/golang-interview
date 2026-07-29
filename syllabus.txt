@@ -1,0 +1,103 @@
+================================================================================
+                       COMPLETE GOLANG INTERVIEW SYLLABUS
+================================================================================
+
+[SECTION 1: GO LANGUAGE FUNDAMENTALS]
+01. Basic Syntax, Types, Constants, and Variables
+    - Declaration syntax (`var`, `:=`, `const`, `iota` enumerations).
+    - Zero values for primitive types, pointers, interfaces, slices, maps, channels.
+    - String immutability, UTF-8 representation, `rune` (int32) vs `byte` (uint8).
+    - Pass-by-value semantics in Go (everything in Go is pass-by-value; pointers pass copy of memory address).
+
+02. Data Structures & Internal Implementations
+    - Arrays vs Slices (`reflect.SliceHeader`: Data uintptr, Len int, Cap int).
+    - Slice slicing operations, capacity growth algorithm (`growslice`), backing array mutations.
+    - Maps internal structure (`hmap`, `bmap`, buckets, overflow buckets, load factor 6.5, evacuation during expansion).
+    - Map iteration non-determinism, concurrent map read/write panic detection.
+
+03. Control Flow, Functions, and Defer / Panic / Recover
+    - Multiple return values, named return values, variadic functions (`...T`).
+    - Closures, lexical scope capture, free variables.
+    - `defer` execution semantics (LIFO order, argument evaluation timing).
+    - `defer` performance evolution (Go 1.14+ open-coded defers vs heap-allocated defers).
+    - `panic` propagation, `recover()` constraints (must be called directly inside deferred function).
+
+04. Type System, Structs, Interfaces, & Methods
+    - Struct memory layout, field alignment, padding, field tags.
+    - Method sets (value receiver vs pointer receiver rule matrix).
+    - Struct embedding (composition) vs OOP inheritance, method promotion, shadowing.
+    - Interface layout (`iface` for concrete types with `itab`, `eface` for `interface{}` / `any`).
+    - The `nil` interface vs non-nil interface containing `nil` pointer trap.
+
+05. Pointers, Memory Allocation, & Escape Analysis
+    - Pointer operators (`*`, `&`), no pointer arithmetic in safe Go.
+    - `new(T)` vs `make(T, args)` vs composite literals.
+    - Stack vs Heap memory allocation decision tree in Go compiler.
+    - Escape analysis inspection (`go build -gcflags="-m"`): pointer escapes, interface dynamic calls, stack overflow bounds.
+
+--------------------------------------------------------------------------------
+
+[SECTION 2: CONCURRENCY, CONTEXT & ADVANCED PATTERNS]
+06. Goroutines, Channels, and Concurrency Basics
+    - Goroutine model vs OS threads (2KB initial stack size, segmented vs contiguous stack growth).
+    - Channel types: Unbuffered (synchronous handoff) vs Buffered (asynchronous queue).
+    - Channel state table (nil, open, closed) for Send, Receive, and Close operations.
+    - `select` statement mechanics: pseudo-random case selection, non-blocking `default` branch.
+
+07. Sync Package & Concurrency Synchronization Patterns
+    - `sync.Mutex` and `sync.RWMutex` (readers-writer lock starvation modes).
+    - `sync.WaitGroup`, `sync.Once`, `sync.Cond`.
+    - `sync.Map`: read-only map vs dirty map, write-lock amortization, split key-space use cases.
+    - Common concurrency patterns: Worker Pools, Fan-In / Fan-Out, Pipeline processing, Generator pattern.
+
+08. Context Propagation, Cancellation, & Deadlines
+    - `context.Context` interface contract (`Deadline()`, `Done()`, `Err()`, `Value()`).
+    - Derived contexts: `WithCancel`, `WithTimeout`, `WithDeadline`, `WithValue`.
+    - Context tree propagation across HTTP servers, RPCs, and Goroutines.
+    - Preventing goroutine leaks by idiomatically deferring `cancel()`.
+
+09. Error Handling & Go 1.13+ Error Wrapping
+    - The `error` interface contract (`Error() string`).
+    - Sentinel errors vs Custom error types.
+    - Error wrapping (`fmt.Errorf("... %w", err)`), `errors.Is()`, `errors.As()`, `errors.Unwrap()`.
+    - Multi-error handling patterns (`errors.Join` in Go 1.20+).
+
+10. Generics & Type Parameters (Go 1.18+)
+    - Generic functions and generic type definitions (`[T any]`).
+    - Type constraints, `comparable`, `~T` underlying type approximations.
+    - Monomorphization vs GCShape dictionary dynamic dispatch compilation model.
+    - Generic data structures (Stacks, Queues, Sets, Linked Lists, Trees).
+
+--------------------------------------------------------------------------------
+
+[SECTION 3: GO RUNTIME INTERNALS, PROFILING & TOOLING]
+11. Go Runtime Scheduler (GMP Model)
+    - The **GMP** Architecture: **G**oroutine, **M**achine (OS thread), **P**rocessor (Logical Execution Context).
+    - Work Stealing algorithm (Stealing from local run queues vs global queue vs network poller).
+    - Handoff mechanism during blocking system calls (`sysmon` monitor thread).
+    - Cooperative preemption (stack allocation checks) vs Asynchronous preemption (OS signals, Go 1.14+).
+
+12. Garbage Collection & Memory Management
+    - Tri-color concurrent mark-sweep garbage collection model (White, Grey, Black objects).
+    - Write Barriers (Dijkstra, Yuasa, and Hybrid Write Barrier in Go 1.8+).
+    - Stop-The-World (STW) phases: Mark Termination and Sweep Termination.
+    - GC Pacing & Tuning: `GOGC` percentage, `GOMEMLIMIT` (Go 1.19+ soft memory ceiling), memory ballasts.
+
+13. Reflection, Unsafe, and CGO
+    - Reflection via `reflect` package (`reflect.Type`, `reflect.Value`, Kind, Struct Tags).
+    - Performance implications of reflection (interfaceboxing, runtime type lookups).
+    - `unsafe.Pointer`, `uintptr`, violating Go memory safety rules, byte conversions (`unsafe.StringData`, `unsafe.Slice`).
+    - `cgo`: Calling C functions from Go, stack switching costs, pointer passing rules.
+
+14. Performance Optimization & Profiling (`pprof`)
+    - Profiling types: CPU Profile, Heap Memory Profile, Goroutine Block Profile, Mutex Contention Profile.
+    - Benchmarking using `go test -bench=. -benchmem`.
+    - Allocation elimination strategies: `sync.Pool` object re-use, byte buffer recycling (`bytes.Buffer`).
+    - CPU cache-line alignment, avoiding false sharing in multi-core struct instances.
+
+15. Testing, Tooling, & Production Engineering
+    - Unit testing with `testing` package: table-driven tests, subtests (`t.Run`), test main (`TestMain`).
+    - Race Detector (`go test -race` with ThreadSanitizer instrumentation).
+    - Static analysis: `gofmt`, `go vet`, `golangci-lint`.
+    - Module management: `go.mod`, `go.sum`, vendoring, multi-module workspaces (`go.work`).
+================================================================================

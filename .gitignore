@@ -1,0 +1,19 @@
+# Binaries for programs and tests
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Profiling & Coverage
+*.pprof
+cpu.pprof
+heap.pprof
+coverage.out
+
+# IDEs & OS files
+.DS_Store
+.idea/
+.vscode/
