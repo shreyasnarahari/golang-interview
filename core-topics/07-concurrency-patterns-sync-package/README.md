@@ -27,4 +27,7 @@ Go provides standard low-level synchronization primitives inside the `sync` and 
 ---
 
 ## ⚠️ Common Gotchas
-1. **Copying Mutex / WaitGroup**: Passing `sync.Mutex` or `sync.WaitGroup` by value creates a copy of the lock state, causing catastrophic race conditions or deadlocks! Always pass by pointer.
+1. **Copying Mutex / WaitGroup**: Passing `sync.Mutex` or `sync.WaitGroup` by value creates a copy of the lock state, causing catastrophic race conditions or deadlocks! Always pass by pointer. (`go vet` flags most copies.)
+2. **`WaitGroup.Add` Placement**: Call `Add(n)` **before** launching the goroutines, never inside them — otherwise `Wait()` can return before all goroutines have registered.
+3. **`sync.Map` Is Not a Drop-In Replacement**: It only wins for read-heavy workloads with stable or disjoint keys. For write-heavy or churning key sets, a plain `map` + `RWMutex` is usually faster and gives you type safety (see `question-bank/hard.md`).
+4. **`sync.Cond` Misuse**: `Cond.Wait()` must always be called in a loop guarding the condition predicate with the lock held — spurious and missed wakeups are possible otherwise. Prefer channels for most signaling.

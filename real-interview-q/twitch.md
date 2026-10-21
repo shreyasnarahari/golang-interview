@@ -1,11 +1,13 @@
-# Twitch — Go Real Interview Questions & Deep Dives
+# Twitch — Company-Flavored Go Interview Questions & Deep Dives
 
 > **Target Roles**: Real-Time Chat Infrastructure Engineer, Video Ingestion Engineer, Distributed Messaging Developer.
+>
+> *These are company-flavored questions inspired by Twitch's public chat architecture and candidate reports — not verbatim interview transcripts.*
 
 ---
 
 ## 🏢 Why Twitch Asks Go
-Twitch uses Go for its massive real-time chat architecture (IRC/WebSocket clusters handling tens of millions of concurrent chat connections). Twitch interviews focus on **Broadcaster Fan-Out Patterns**, **Sliding Window Chat Rate Limiters**, and **Memory-Efficient Client Session Management**.
+Twitch uses Go for its massive real-time chat architecture (IRC/WebSocket clusters handling tens of millions of concurrent chat connections). This file currently contains one deep dive: a **chat room broadcaster with fan-out to N subscribers**, covering **non-blocking sends so slow consumers can't stall the room**, **buffered per-client channels**, and a **`sync.RWMutex`-guarded client registry**. Sliding-window rate limiters and session lifecycle management are common Twitch-flavored topics but are not covered here yet.
 
 ---
 

@@ -5,7 +5,7 @@
 ---
 
 ## 🏢 Why Meta Asks Go
-Meta uses Go for internal developer tools, infrastructure automation, network probing agents, and container containerization pipelines. Meta interviews test **memory alignment & struct padding**, **cgo performance bottlenecks**, and **goroutine channel synchronization**.
+Meta uses Go for internal developer tools, infrastructure automation, network probing agents, and container containerization pipelines. This file covers **memory alignment & struct padding**, a favorite Meta infrastructure topic.
 
 ---
 
@@ -76,3 +76,9 @@ func main() {
 	fmt.Println("Optimized size:", unsafe.Sizeof(OptimizedStruct{}))     // 24
 }
 ```
+
+#### Key Takeaways
+- Every type has an alignment requirement (`unsafe.Alignof`): a field's offset must be a multiple of its alignment, and the struct's total size is padded to a multiple of its largest field's alignment.
+- **Rule of thumb**: order fields from largest to smallest (or group same-sized fields) to minimize padding.
+- Verify empirically with `unsafe.Sizeof`, `unsafe.Offsetof`, and `unsafe.Alignof` — never guess.
+- This matters at scale: in a slice of millions of structs, 25% size reduction means 25% less memory traffic and better cache utilization (see `core-topics/14-performance-optimization-profiling/`).

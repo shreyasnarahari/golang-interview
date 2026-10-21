@@ -1,7 +1,19 @@
 # Topic 02 Real Interview Q&A
 
-### Q: What is the difference between an Array and a Slice in Go?
-**Answer**: An array has a fixed length defined at compile time (`[5]int`), and its size is part of its type. A slice (`[]int`) is a dynamic reference wrapper around an array consisting of a 24-byte `SliceHeader` (Data pointer, Len, Cap).
+### Q: (Asked at a high-throughput services company) "What's the difference between an array and a slice in Go — and when would you ever use a raw array?"
+**Frequency**: often
+**Why interviewers ask**: It probes whether you understand Go's value semantics and where fixed-size value types beat reference types in hot paths.
+**Answer**: An array (`[5]int`) is a fixed-size **value type** — its length is part of its type, so `[4]int` and `[5]int` are incompatible, and passing or assigning an array **copies the whole thing**. A slice (`[]int`) is a 24-byte descriptor (data pointer, len, cap) over a shared backing array — passing it copies only the header, so callees see the same elements. Use raw arrays when the size is a true compile-time constant and you want value semantics + cache-friendly stack/contiguous storage: e.g. `[32]byte` for a SHA-256 digest, fixed-size ring buffers, or small lookup tables where a heap allocation and bounds-checkable dynamic length would be pure overhead. Everything else defaults to slices.
+**Follow-ups**: What does `func f(a [1024]int)` cost vs `func f(s []int)` on a hot path? How do you get a slice view of an array without copying (`a[:]`, or `unsafe.Slice` in go1.17+)?
 
-### Q: How does Go handle map collisions?
-**Answer**: Each bucket (`bmap`) holds 8 key-value pairs. When a bucket fills up, Go attaches overflow buckets via pointer. When the load factor exceeds 6.5, Go triggers incremental map expansion.
+### Q: (Asked at a cloud infra company) "Walk me through how Go resolves hash collisions in maps — and has that changed recently?"
+**Frequency**: sometimes
+**Why interviewers ask**: Infra teams live on maps; they want to know whether your mental model is current or stuck at Go 1.19-era blog posts.
+**Answer**: Pre-Go 1.24: keys hashed to an 8-slot bucket (`bmap`); the top hash byte (`tophash`) short-circuited comparisons, and full buckets chained onto **overflow buckets**, with incremental doubling at load factor 6.5. Since **Go 1.24** the runtime uses **Swiss tables**: 8-slot groups with an 8-byte control word holding 7 hash bits (H2) per slot, checked **all at once** via SIMD-friendly bit tricks; collisions probe group-to-group quadratically (no overflow chains), the load ceiling is 87.5%, deletes may leave tombstones, and growth stays incremental by splitting a directory of small tables. Practically: fewer cache misses, no degenerate long chains, better memory at scale. What hasn't changed: no addressable elements, no shrink-on-delete, randomized iteration, fatal error on concurrent write/read.
+**Follow-ups**: Given this design, why is `map[string]T` with long keys still fast (hash caching, H2 prefilter)? How would you benchmark whether upgrading to Go 1.24+ helped your map-heavy service?
+
+### Q: (Asked at a low-latency trading systems firm) "This handler builds a slice in a loop and we're seeing GC pressure and p99 spikes. What do you look at first?"
+**Frequency**: sometimes
+**Why interviewers ask**: It turns slice internals into an applied performance question — exactly how these topics come up in real systems work.
+**Answer**: First suspect is **unpreallocated append growth**: each `growslice` reallocates and copies the backing array (2x below 256 elements, easing to 1.25x above), leaving every intermediate array for the GC to scan and collect. If sizes are even roughly known, `make([]T, 0, n)` removes all intermediate allocations — one backing array, zero copies. Next checks: (1) element type — `[]T` of a large struct copies megabytes per grow and is GC-scan-heavy if it contains pointers; consider `[]*T` or `[]int32` indices; (2) sub-slice leaks — retaining `s[:10]` of a huge buffer pins the whole array, so copy out (`slices.Clone`) before storing; (3) verify with a profile: `go test -bench=. -benchmem` for allocs/op, and `go build -gcflags=-m` to confirm the backing arrays escape to the heap. On the map side of the same handler, `make(map[K]V, hint)` similarly avoids repeated rehashing.
+**Follow-ups**: Why does `[]*T` reduce GC scan cost relative to `[]T` when T contains pointers? When would you reach for a `sync.Pool` of buffers instead of just preallocating?

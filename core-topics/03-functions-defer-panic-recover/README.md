@@ -24,8 +24,8 @@ func triple(x int) (result int) {
 - `defer` calls execute in **LIFO** (Last-In, First-Out) order.
 - **Argument Evaluation**: Arguments to a deferred function are evaluated **immediately** when the `defer` statement is executed, NOT when the deferred call runs!
 - **Compiler Optimization Evolution**:
-  - *Go 1.13 and earlier*: Defer calls allocated `_defer` structs on heap (~35ns per defer).
-  - *Go 1.14+*: **Open-coded defers**. Inlines defers directly into the function return path for loops with fixed iterations, reducing defer overhead to near **zero extra cost** (~1–3ns).
+  - *Go 1.13*: `_defer` records moved from the heap to the **stack** (`deferprocStack`), cutting overhead to ~1ns in many cases (pre-1.13 heap defers cost ~35ns).
+  - *Go 1.14+*: **Open-coded defers**. The compiler inlines defer calls directly into the function's return path, tracked by a bitmask — reducing overhead to near **zero extra cost** (~1ns). This applies only when the function's `defer` statements are **not inside loops** (and there are at most 8 of them); defers in loops still use the runtime mechanism.
 
 ### 3. Panic & Recover Constraints
 - `panic` stops normal execution, unwinds the stack of the current goroutine, and runs all deferred functions.

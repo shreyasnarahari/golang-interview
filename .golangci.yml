@@ -1,0 +1,19 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+issues:
+  # Exercise stubs intentionally panic until the learner implements them;
+  # don't fail the lint run on that teaching scaffold.
+  exclude-rules:
+    - path: core-topics/.*/exercises/
+      linters:
+        - staticcheck
+        - unused

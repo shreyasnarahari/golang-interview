@@ -1,11 +1,13 @@
-# Amazon / AWS — Go Real Interview Questions & Deep Dives
+# Amazon / AWS — Company-Flavored Go Interview Questions & Deep Dives
 
 > **Target Roles**: Software Development Engineer (SDE II / Senior), AWS Cloud Platform Developer, Systems Infrastructure Engineer.
+>
+> *These are company-flavored questions inspired by AWS's public Go usage (Lambda Go runtime, AWS SDK for Go) and candidate reports — not verbatim interview transcripts.*
 
 ---
 
 ## 🏢 Why Amazon Asks Go
-AWS builds container services (ECS/EKS), Firecracker orchestration tools, AWS Lambda Go runtime, and cloud microservices in Go. Amazon interviews test **Exponential Backoff with Full Jitter**, **Concurrent S3 Chunk Uploaders**, **`golang.org/x/sync/errgroup` error propagation**, and **Context Deadlines**.
+AWS builds container services (ECS/EKS), the AWS Lambda Go runtime, and cloud microservices in Go. This file currently contains one deep dive: a production-grade **retry function with exponential backoff and full jitter** for throttled AWS API calls (`429`/`503`), including **context-aware cancellation and deadlines**. Topics like concurrent S3 chunked uploaders and `errgroup` fan-out are common in AWS-flavored loops but are not covered here yet.
 
 ---
 

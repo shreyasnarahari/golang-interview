@@ -24,6 +24,11 @@ type Context interface {
 4. **`context.WithDeadline(parent, time)`**: Automatically triggers cancellation when a specific clock deadline is reached.
 5. **`context.WithValue(parent, key, val)`**: Returns a child context carrying a request-scoped key-value pair.
 
+### 3. Modern Context APIs (Go 1.20 / 1.21)
+- **`context.WithCancelCause(parent)`** (1.20): like `WithCancel`, but `cancel(err)` records a *cause*. Children see `ctx.Err() == context.Canceled`, while the canceler can retrieve the real reason via **`context.Cause(ctx)`**. `WithDeadlineCause`/`WithTimeoutCause` do the same for deadlines.
+- **`context.WithoutCancel(parent)`** (1.21): returns a context that inherits the parent's *values* but is never canceled by it — essential for async work (e.g., logging, cleanup) that must outlive the request.
+- **`context.AfterFunc(ctx, f)`** (1.21): arranges for `f` to run in its own goroutine after `ctx` is done; the returned stop function unregisters it. This replaces manual `go func() { <-ctx.Done(); f() }()` plumbing and is how 1.21+ context propagation itself is implemented.
+
 ```
 Context Tree Hierarchy
 +-------------------------------+

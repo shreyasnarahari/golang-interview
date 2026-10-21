@@ -38,4 +38,6 @@ Unbuffered Channel (Sync Handoff)      Buffered Channel (Capacity Queue)
 ---
 
 ## ⚠️ Common Gotchas
-1. **Goroutine Leaks**: Spawning a goroutine that blocks on a channel write/read with no corresponding reader/writer causes memory and resource leaks.
+1. **Goroutine Leaks**: Spawning a goroutine that blocks on a channel write/read with no corresponding reader/writer causes memory and resource leaks. Always provide an exit path (e.g., a `done` channel or `context.Context`).
+2. **Closing Channels**: Only the **sender** should close a channel. Closing from the receiver side, or closing an already-closed channel, panics. Receiving from a closed channel yields the zero value with `ok=false` — always use the two-value form `v, ok := <-ch` when the channel may be closed.
+3. **`nil` Channel Deadlock**: Sending to or receiving from a `nil` channel blocks forever. This is sometimes exploited deliberately (disabling a `select` case by setting it to `nil`), but a forgotten `make(chan T)` is a classic deadlock source.

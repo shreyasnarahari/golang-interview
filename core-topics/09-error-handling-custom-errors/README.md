@@ -37,3 +37,6 @@ Error Chain Wrapping
 
 ## ⚠️ Common Gotchas
 1. **Using `%v` instead of `%w`**: `fmt.Errorf("err: %v", err)` formats the error message as a string but breaks the unwrap chain! `errors.Is` will fail to match wrapped errors.
+2. **Wrapping `nil` errors**: `fmt.Errorf("op: %w", nil)` returns a **non-nil** error wrapping nil. Always check `err != nil` before wrapping.
+3. **Comparing wrapped errors with `==`**: After wrapping, `err == io.EOF` fails even if the chain contains `io.EOF` — use `errors.Is`/`errors.As`.
+4. **Multi-wrapping (Go 1.20+)**: `fmt.Errorf` accepts multiple `%w` verbs, producing an error whose `Unwrap() []error` exposes a **tree**; `errors.Is`/`As` traverse the whole tree. `errors.Join(err1, err2)` builds one directly.

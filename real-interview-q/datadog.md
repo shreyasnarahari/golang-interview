@@ -1,15 +1,17 @@
-# Datadog — Go Real Interview Questions & Deep Dives
+# Datadog — Company-Flavored Go Interview Questions & Deep Dives
 
 > **Target Roles**: Telemetry Agent Engineer, Distributed Metrics Engineer, APM & Logging Infrastructure Engineer.
+>
+> *These are company-flavored questions inspired by Datadog's public Go stack (Datadog Agent) and candidate reports — not verbatim interview transcripts.*
 
 ---
 
 ## 🏢 Why Datadog Asks Go
-Datadog's system monitoring agent (Datadog Agent 7+) and telemetry pipelines are written in Go. Datadog interviews focus on **high-frequency metric collection**, **lockless ring buffers**, **memory allocation profiling (`pprof`)**, and **efficient byte buffer serialization**.
+Datadog's system monitoring agent (Datadog Agent 7+) and telemetry pipelines are written in Go. This file covers **high-frequency metric collection with atomic counters**, **low-contention registries (`sync.RWMutex` fast path)**, and **memory allocation monitoring (`runtime.MemStats`)**.
 
 ---
 
-## 📌 Question 1: Concurrent Ring Buffer Metric Aggregator
+## 📌 Question 1: Concurrent Metric Aggregator (Atomic Counters + Registry)
 
 ### Question
 Write a lock-free or low-contention concurrent Metric Aggregator in Go that aggregates high-frequency telemetry counters `(MetricName, Count)` from thousands of goroutines without creating map allocation lock contention.

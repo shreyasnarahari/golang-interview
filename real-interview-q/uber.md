@@ -1,6 +1,8 @@
-# Uber — Go Real Interview Questions & Deep Dives
+# Uber — Company-Flavored Go Interview Questions & Deep Dives
 
 > **Target Roles**: Backend Engineer, Distributed Systems Engineer, High-Throughput Infrastructure Engineer, Platform Architect.
+>
+> *These are company-flavored questions inspired by Uber's public Go engineering (4,000+ microservices, Jaeger) and candidate reports — not verbatim interview transcripts.*
 
 ---
 
@@ -93,55 +95,9 @@ func main() {
 
 ---
 
-## 📌 Question 2: Lockless Lock Contention vs `sync/atomic` vs `sync.RWMutex`
+## 📌 Question 2: Lockless Metrics — `sync/atomic` vs `sync.Mutex` Contention
 
-### Question
-Uber microservices handle hundreds of thousands of requests per second. Compare the performance and memory behavior of `sync.Mutex`, `sync.RWMutex`, and `sync/atomic` for an active metric counter. Write benchmarkable code demonstrating `atomic.AddInt64` vs `sync.Mutex`.
-
-### Detailed Solution & Benchmark Code
-
-```go
-package main
-
-import (
-	"sync"
-	"sync/atomic"
-)
-
-type MutexCounter struct {
-	mu  sync.Mutex
-	val int64
-}
-
-func (c *MutexCounter) Inc() {
-	c.mu.Lock()
-	c.val++
-	c.mu.Unlock()
-}
-
-func (c *MutexCounter) Value() int64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.val
-}
-
-type AtomicCounter struct {
-	val int64
-}
-
-func (c *AtomicCounter) Inc() {
-	atomic.AddInt64(&c.val, 1)
-}
-
-func (c *AtomicCounter) Value() int64 {
-	return atomic.LoadInt64(&c.val)
-}
-```
-
-#### Key Differences & Uber Engineering Guidelines
-- **`sync.Mutex`**: Requires kernel/runtime thread parking when contention occurs (~1–2 µs context switch overhead per lock collision).
-- **`sync/atomic`**: Uses hardware CAS (Compare-And-Swap) or bus lock instructions directly in CPU (~5–10 ns per operation).
-- **Rule**: For single counter metrics or atomic pointer swaps (`atomic.Pointer[T]`), ALWAYS use `sync/atomic`. For multi-field struct updates that must remain consistent, use `sync.Mutex` or `sync.RWMutex`.
+> This question is covered in the Datadog question bank — see [datadog.md, Question 1: Concurrent Metric Aggregator](datadog.md), which keeps a working implementation. The Uber-flavored variant emphasizes the **contention cost comparison** rather than the registry design: a goroutine that loses a `sync.Mutex` is parked by the runtime (`gopark`) and needs a wakeup (`goready`) on unlock — on the order of ~1 µs for the park/unpark round trip — versus ~5–10 ns for an uncontended `atomic.AddInt64`. Rule of thumb: single counters and pointer swaps → `sync/atomic` (`atomic.Int64`, `atomic.Pointer[T]`); multi-field invariants that must stay consistent → `sync.Mutex`/`sync.RWMutex`.
 
 ---
 

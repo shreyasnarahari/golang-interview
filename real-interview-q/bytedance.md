@@ -1,83 +1,19 @@
-# ByteDance / TikTok — Go Real Interview Questions & Deep Dives
+# ByteDance / TikTok — Company-Flavored Go Interview Questions & Deep Dives
 
 > **Target Roles**: High-Concurrency Backend Engineer, RPC & Framework Developer, Video Pipeline Infrastructure Engineer.
+>
+> *These are company-flavored questions inspired by ByteDance's public Go stack (Kitex, Netpoll) and candidate reports — not verbatim interview transcripts.*
 
 ---
 
 ## 🏢 Why ByteDance Asks Go
-ByteDance operates one of the largest Go microservice architectures in the world (powering TikTok/Douyin). ByteDance open-sourced **Kitex** (high-performance RPC framework) and **Netpoll** (epoll-based Go network library). ByteDance interviews focus on **epoll-based network I/O**, **high-concurrency goroutine worker pools**, **allocation elimination**, and **map bucket mechanics**.
+ByteDance operates one of the largest Go microservice architectures in the world (powering TikTok/Douyin) and open-sourced **Kitex** (high-performance RPC framework) and **Netpoll** (epoll-based Go network library). This file covers **map bucket internals and `hmap` evacuation**, **interface (`eface`) boxing costs**, and **allocation elimination**; the goroutine worker-pool question commonly reported in ByteDance loops is covered in [uber.md](uber.md).
 
 ---
 
-## 📌 Question 1: High-Performance Fixed Memory Goroutine Pool
+## 📌 Question 1: High-Performance Fixed-Memory Goroutine Pool
 
-### Question
-Standard `go func()` spawns dynamic goroutines with 2 KB stacks. Under extreme traffic spikes (e.g. 500,000 req/sec), spawning uncapped goroutines degrades GC performance. Write a fixed-capacity, reusable Goroutine Pool in Go.
-
-### Detailed Solution & Complete Code
-
-```go
-package main
-
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
-type Task func()
-
-type Pool struct {
-	capacity int
-	taskCh   chan Task
-	wg       sync.WaitGroup
-}
-
-func NewPool(capacity int) *Pool {
-	p := &Pool{
-		capacity: capacity,
-		taskCh:   make(chan Task, capacity*2),
-	}
-	p.init()
-	return p
-}
-
-func (p *Pool) init() {
-	for i := 0; i < p.capacity; i++ {
-		p.wg.Add(1)
-		go func(workerID int) {
-			defer p.wg.Done()
-			for task := range p.taskCh {
-				task()
-			}
-		}(i)
-	}
-}
-
-func (p *Pool) Submit(t Task) {
-	p.taskCh <- t
-}
-
-func (p *Pool) Release() {
-	close(p.taskCh)
-	p.wg.Wait()
-}
-
-func main() {
-	pool := NewPool(4)
-
-	for i := 1; i <= 10; i++ {
-		jobID := i
-		pool.Submit(func() {
-			fmt.Printf("Task %d executed\n", jobID)
-		})
-	}
-
-	time.Sleep(50 * time.Millisecond)
-	pool.Release()
-	fmt.Println("Goroutine pool released cleanly")
-}
-```
+> This question is covered in the Uber question bank — see [uber.md, Question 3: Worker Pool Pattern with Graceful Shutdown](uber.md). The ByteDance-flavored variant emphasizes a **fixed memory footprint under extreme traffic spikes** (e.g. 500,000 req/s): bounded task queues and worker reuse instead of uncapped `go func()` spawning, so GC object counts stay flat. Use the Uber implementation as the base, and be ready to justify **backpressure** — rejecting or blocking submissions when the queue is full rather than letting goroutine counts grow unboundedly.
 
 ---
 
@@ -87,10 +23,9 @@ func main() {
 Explain why ByteDance created custom map implementations in high-performance RPC frameworks like Kitex instead of default `map[string]any`. How does Go's runtime `hmap` handle key-value buckets during resize evacuation?
 
 ### Detailed Solution
-1. **Default `hmap` Resize**:
-   - Go map (`hmap`) maintains array of buckets `bmap`.
-   - When load factor exceeds 6.5, Go doubles bucket count ($2 \times B$).
-   - Re-allocation is incremental (evacuating 1–2 buckets per write operation to avoid STW latency spikes).
+1. **Default Map Resize**:
+   - **Go 1.24+**: the runtime map switched to a **Swiss-table** design (`internal/runtime/maps`): 8-slot groups with a per-group 64-bit control word, SIMD-friendly probing, and incremental directory growth instead of classic bucket doubling.
+   - **Go ≤ 1.23 (legacy `hmap`, still commonly asked)**: `hmap` maintains an array of buckets (`bmap`); when the load factor exceeds 6.5, Go doubles the bucket count ($2 \times B$), and re-allocation is incremental (evacuating 1–2 buckets per write to avoid latency spikes). Interviews framed around "bucket evacuation" refer to this legacy design — name both and note the version.
 2. **Interface Boxing Cost**:
    - `map[string]any` stores values in empty interface `any` (`eface`), which forces heap allocations for scalar types.
 3. **ByteDance Optimization**:
